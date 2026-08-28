@@ -2,7 +2,7 @@
 ## 学习模式（推荐：会话内 /learn）
 
 主入口仍是普通 `gobs`。想上课时在已经打开的会话里输入 `/learn` 或 `/learn Transformer`。
-与 `/save-to-vault` 一样是 skill，不需要退出去跑 `gobs learn start`。
+与 `/save-to-vault` 一样是 skill，不需要退出去跑 `gobs-learn start`。
 
 也可以说「进入学习模式」、「开始学 Transformer」。只有这时才当教练。
 平时仍是书记官：改讲解页，不要改进度卡。L0 对零基础讲。有论文用原文词+语境人话，不要另造正名。「只要记住」第 1 句是活（工作台），修/换/拆只落在第 3 句。论文第一课只吃摘要+引言。过程课必须 ASCII，排队要把「糊」画进图。讲完先问哪步不懂，补上再课间确认（细则见 `/learn` skill）。L1 只在旧图上贴名字。
@@ -15,14 +15,14 @@
 1. 原文写成一篇可读讲解（像默认 gobs 讲解），不是聊天 log
 2. 刚完成的一块写进**该主题文件夹里的领域卡**（没有主题夹才用 `22_study/00_learn/`）
 
-调用 `gobs learn save --note` 用 `gobs learn start` 打印的卡片路径。不要拆成两步。卡片和原文里都不要贴 `/learn` 对话 log。
+调用 `gobs-learn save --note` 用 `gobs-learn start` 打印的卡片路径。不要拆成两步。卡片和原文里都不要贴 `/learn` 对话 log。
 
 ### CLI（可选，不是主路径）
 
-- `gobs learn start NAME`：终端一键建卡 + 启动/续 session
-- `gobs learn start NAME --no-launch`：只建卡（`/learn` skill 内部会调）
-- `gobs learn save --note 卡片路径.md --body-file CARD.md --chat-file LECTURE.md`
-- `gobs learn status`：看档位与 session_id
+- `gobs-learn start NAME`：终端一键建卡 + 启动/续 session
+- `gobs-learn start NAME --no-launch`：只建卡（`/learn` skill 内部会调）
+- `gobs-learn save --note 卡片路径.md --body-file CARD.md --chat-file LECTURE.md`
+- `gobs-learn status`：看档位与 session_id
 
 ### 档位
 

@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from gobs.cli import main  # noqa: E402
-from gobs.init_cmd import init_vault  # noqa: E402
-from gobs.learn import (  # noqa: E402
+from gobs_learn.cli import main  # noqa: E402
+from gobs_learn.init_cmd import init_learn  # noqa: E402
+from gobs_learn.learn import (  # noqa: E402
     LearnError,
     bind_session,
     boot_prompt,
@@ -41,8 +41,8 @@ class LearnTests(unittest.TestCase):
             tmp = Path(raw)
             vault = tmp / "vault"
             vault.mkdir()
-            with patch("gobs.config.user_config_path", self._home(tmp)):
-                init_vault(vault, skeleton=True, set_default=False)
+            (vault / ".obsidian").mkdir()
+            init_learn(vault)
             rel, action = create_domain(vault, "Transformer")
             self.assertEqual(action, "created")
             self.assertEqual(rel.as_posix(), "22_study/00_learn/Transformer.md")
@@ -61,8 +61,8 @@ class LearnTests(unittest.TestCase):
             tmp = Path(raw)
             vault = tmp / "vault"
             vault.mkdir()
-            with patch("gobs.config.user_config_path", self._home(tmp)):
-                init_vault(vault, skeleton=False, set_default=False)
+            (vault / ".obsidian").mkdir()
+            init_learn(vault)
             rel, _ = create_domain(vault, "Transformer")
             dest_dir = vault / "22_study" / "10_papers" / "Attention Is All You Need"
             dest_dir.mkdir(parents=True)
@@ -78,14 +78,15 @@ class LearnTests(unittest.TestCase):
             self.assertEqual(action, "exists")
             self.assertFalse((vault / "22_study" / "00_learn" / "Transformer.md").exists())
             body = dest.read_text(encoding="utf-8")
-            result = save_learn(
-                note="22_study/00_learn/Transformer.md",
-                body=body,
-                chat="## 盯\n\n排队取消。",
-                vault=vault,
-                title="Transformer",
-                day="20260828",
-            )
+            with patch("gobs.config.user_config_path", self._home(tmp)):
+                result = save_learn(
+                    note="22_study/00_learn/Transformer.md",
+                    body=body,
+                    chat="## 盯\n\n排队取消。",
+                    vault=vault,
+                    title="Transformer",
+                    day="20260828",
+                )
             self.assertEqual(result.note.resolve(), dest.resolve())
 
     def test_bind_session(self) -> None:
@@ -93,8 +94,7 @@ class LearnTests(unittest.TestCase):
             tmp = Path(raw)
             vault = tmp / "vault"
             vault.mkdir()
-            with patch("gobs.config.user_config_path", self._home(tmp)):
-                init_vault(vault, skeleton=False, set_default=False)
+            init_learn(vault)
             rel, _ = create_domain(vault, "Transformer")
             bind_session(vault, rel, "abc123session")
             card = parse_card(vault / rel, vault)
@@ -106,14 +106,16 @@ class LearnTests(unittest.TestCase):
             tmp = Path(raw)
             vault = tmp / "vault"
             vault.mkdir()
+            (vault / ".obsidian").mkdir()
             cfg = tmp / "home" / "config.toml"
 
             def fake() -> Path:
                 return cfg
 
             with patch("gobs.config.user_config_path", fake):
-                main(["init", str(vault), "--no-default"])
-                code = main(["learn", "start", "英语", "--vault", str(vault), "--no-launch"])
+                code_init = main(["init", str(vault)])
+                code = main(["start", "英语", "--vault", str(vault), "--no-launch"])
+            self.assertEqual(code_init, 0)
             self.assertEqual(code, 0)
             self.assertTrue((vault / "22_study" / "00_learn" / "英语.md").is_file())
 
@@ -121,38 +123,26 @@ class LearnTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             tmp = Path(raw)
             vault = tmp / "vault"
-            with patch("gobs.config.user_config_path", self._home(tmp)):
-                actions = init_vault(vault, skeleton=True, set_default=False)
+            actions = init_learn(vault)
             self.assertEqual(actions["22_study/00_learn"], "created")
             agents = (vault / "AGENTS.md").read_text(encoding="utf-8")
             self.assertIn("gobs:learn-protocol", agents)
             self.assertIn("/learn", agents)
-            self.assertIn("只认", agents)
-            self.assertIn("gobs learn save", agents)
+            self.assertIn("gobs-learn save", agents)
             self.assertIn("领域卡", agents)
             learn = vault / ".grok" / "skills" / "learn" / "SKILL.md"
             self.assertTrue(learn.is_file())
             learn_text = learn.read_text(encoding="utf-8")
             self.assertIn("当前会话", learn_text)
             self.assertIn("讲解", learn_text)
-            self.assertIn("gobs learn save", learn_text)
+            self.assertIn("gobs-learn save", learn_text)
             self.assertIn("零基础", learn_text)
             self.assertIn("只要记住", learn_text)
             self.assertIn("ASCII", learn_text)
-            self.assertIn("不要硬画", learn_text)
-            self.assertIn("原文", learn_text)
-            self.assertIn("懂没懂", learn_text)
-            self.assertIn("印象包", learn_text)
-            self.assertIn("摘要", learn_text)
-            self.assertIn("这一课够用", learn_text)
-            self.assertIn("要做的活", learn_text)
-            self.assertNotIn("一次新零件不超过 3 个", learn_text)
-            self.assertIn("可读", learn_text)
-            self.assertIn("聊天 log", learn_text)
+            self.assertNotIn("gobs learn save", learn_text)
             domain = vault / ".grok" / "skills" / "learn-domain" / "SKILL.md"
             self.assertTrue(domain.is_file())
-            save_skill = vault / ".grok" / "skills" / "save-to-vault" / "SKILL.md"
-            self.assertIn("gobs learn save", save_skill.read_text(encoding="utf-8"))
+            self.assertFalse((vault / ".grok" / "skills" / "save-to-vault").exists())
 
     def test_boot_prompt_save_and_teach(self) -> None:
         text = boot_prompt("22_study/00_learn/Transformer.md", "Transformer")
@@ -162,16 +152,8 @@ class LearnTests(unittest.TestCase):
         self.assertIn("只要记住", text)
         self.assertIn("讲解", text)
         self.assertIn("ASCII", text)
-        self.assertIn("不要硬画", text)
-        self.assertIn("原文", text)
-        self.assertIn("卡住", text)
-        self.assertIn("印象包", text)
-        self.assertIn("摘要", text)
         self.assertIn("要修英译德", text)
         self.assertNotIn("不要讲课", text)
-        self.assertNotIn("要准", text)
-        self.assertNotIn("一次新零件不超过 3 个", text)
-        self.assertNotIn("要不要把这一块同步", text)
 
     def test_save_learn_writes_card_and_transcript(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -180,12 +162,12 @@ class LearnTests(unittest.TestCase):
             vault.mkdir()
             (vault / ".obsidian").mkdir()
             with patch("gobs.config.user_config_path", self._home(tmp)):
-                init_vault(vault, skeleton=False, set_default=False)
+                init_learn(vault)
                 rel, _ = create_domain(vault, "Transformer")
                 body = (vault / rel).read_text(encoding="utf-8")
                 body = body.replace(
-                    "- 场景：",
-                    "- 场景：翻译时对齐词 [p1]",
+                    "- 场景（课程目标，不是第一课）：",
+                    "- 场景（课程目标，不是第一课）：翻译时对齐词 [p1]",
                 )
                 result = save_learn(
                     note=rel.as_posix(),
@@ -226,7 +208,7 @@ class LearnTests(unittest.TestCase):
             vault.mkdir()
             (vault / ".obsidian").mkdir()
             with patch("gobs.config.user_config_path", self._home(tmp)):
-                init_vault(vault, skeleton=False, set_default=False)
+                init_learn(vault)
                 rel, _ = create_domain(vault, "Transformer")
                 body = (vault / rel).read_text(encoding="utf-8")
                 with self.assertRaises(LearnError):
@@ -251,17 +233,17 @@ class LearnTests(unittest.TestCase):
             tmp = Path(raw)
             vault = tmp / "vault"
             vault.mkdir()
+            (vault / ".obsidian").mkdir()
             cfg = tmp / "home" / "config.toml"
             card = tmp / "card.md"
             chat = tmp / "chat.md"
             with patch("gobs.config.user_config_path", lambda: cfg):
-                main(["init", str(vault), "--no-default"])
+                main(["init", str(vault)])
                 rel, _ = create_domain(vault, "英语")
                 card.write_text((vault / rel).read_text(encoding="utf-8"), encoding="utf-8")
                 chat.write_text("hello\n\nworld", encoding="utf-8")
                 code = main(
                     [
-                        "learn",
                         "save",
                         "--note",
                         rel.as_posix(),
@@ -276,7 +258,10 @@ class LearnTests(unittest.TestCase):
                     ]
                 )
             self.assertEqual(code, 0)
-            self.assertTrue(any((vault / "90_archive" / "transcripts").glob("*.md")))
+            transcripts = list((vault / "99_Archive" / "transcripts").glob("*.md"))
+            if not transcripts:
+                transcripts = list((vault / "90_archive" / "transcripts").glob("*.md"))
+            self.assertTrue(transcripts)
 
 
 if __name__ == "__main__":

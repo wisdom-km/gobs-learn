@@ -8,9 +8,10 @@ from datetime import date
 from importlib.resources import files
 from pathlib import Path
 
-from gobs.config import load_user_config, load_vault_config, resolve_vault
-from gobs.constants import LEARN_DIR
+from gobs.config import resolve_vault
 from gobs.save import SaveError, SaveResult, save_note, split_paragraphs
+
+from gobs_learn.constants import LEARN_DIR
 
 _NOISE_EXACT = re.compile(
     r"^(?:"
@@ -47,7 +48,7 @@ _SESSION = re.compile(r"^session_id:\s*(\S+)", re.M)
 
 def _template_file(*parts: str) -> str:
     try:
-        return files("gobs.templates").joinpath(*parts).read_text(encoding="utf-8")
+        return files("gobs_learn.templates").joinpath(*parts).read_text(encoding="utf-8")
     except (FileNotFoundError, ModuleNotFoundError, TypeError):
         root = Path(__file__).resolve().parent / "templates"
         return root.joinpath(*parts).read_text(encoding="utf-8")
@@ -64,10 +65,26 @@ def slugify(name: str) -> str:
 _SKIP_DIR_NAMES = {".obsidian", ".git", ".grok", ".trash", "node_modules"}
 
 
+def _learn_rel(vault: Path) -> str:
+    """Optional `learn =` in vault .gobs/config.toml; gobs itself ignores it."""
+    import sys
+
+    path = vault / ".gobs" / "config.toml"
+    if path.is_file():
+        if sys.version_info >= (3, 11):
+            import tomllib
+        else:  # pragma: no cover
+            import tomli as tomllib  # type: ignore
+        with path.open("rb") as fh:
+            data = tomllib.load(fh)
+        raw = data.get("learn") if isinstance(data, dict) else None
+        if isinstance(raw, str) and raw.strip():
+            return raw.replace("\\", "/").strip("/")
+    return LEARN_DIR
+
+
 def learn_dir(vault: Path) -> Path:
-    cfg = load_vault_config(vault, load_user_config())
-    rel = (cfg.learn or LEARN_DIR).replace("\\", "/").strip("/")
-    return vault / rel
+    return vault / _learn_rel(vault)
 
 
 def domain_path(vault: Path, name: str) -> Path:
@@ -209,7 +226,7 @@ def bind_session(vault: Path, rel: Path | str, session_id: str) -> None:
 
 def format_status(cards: list[DomainCard]) -> str:
     if not cards:
-        return "还没有领域卡。用 gobs learn start <名称> 开一张。"
+        return "还没有领域卡。用 gobs-learn start <名称> 开一张。"
     lines = []
     for card in cards:
         sid = card.session_id or "-"
@@ -283,17 +300,24 @@ def save_learn(
     vault_path = resolve_learn_vault(vault)
     rel = resolve_learn_note(vault_path, note)
     try:
-        return save_note(
+        result = save_note(
             note=rel,
             body=body,
             chat=lecture,
             vault=vault_path,
             title=title,
             day=day,
-            lecture=True,
         )
     except SaveError as exc:
         raise LearnError(str(exc)) from exc
+    if result.transcript and result.transcript.is_file():
+        raw = result.transcript.read_text(encoding="utf-8")
+        if raw.startswith("# Transcript"):
+            rest = raw.split("\n", 1)[1] if "\n" in raw else ""
+            iso = date.today().isoformat()
+            header = f"# {title or Path(rel).stem} · {iso} 讲解\n"
+            result.transcript.write_text(header + rest, encoding="utf-8")
+    return result
 
 
 def boot_prompt(

@@ -12,7 +12,7 @@ argument-hint: "[领域名，如 Transformer 或 英语]"
 # /learn — 当前会话内进入教练模式
 
 主入口仍是普通 `gobs`。本 skill 只在用户已经进了会话、再切到 `/learn` 时用。
-不要让用户退出去跑 `gobs learn start`。
+不要让用户退出去跑 `gobs-learn start`。
 未进入本 skill 时：改主题夹里的**讲解**页，不要改进度卡。
 
 ## 步骤
@@ -24,7 +24,7 @@ argument-hint: "[领域名，如 Transformer 或 英语]"
 2. **确保领域卡存在**（工作目录已是 vault）
 
    ```bash
-   gobs learn start "领域名" --no-launch
+   gobs-learn start "领域名" --no-launch
    ```
 
    记下它打印的卡片相对路径。卡可能在主题文件夹里，不一定在 `22_study/00_learn/`。
@@ -87,7 +87,7 @@ argument-hint: "[领域名，如 Transformer 或 英语]"
    - 卡片里不要贴聊天 log。然后一次调用：
 
    ```bash
-   gobs learn save --note <start打印的卡片路径> --body-file CARD.md --chat-file LECTURE.md --title "领域名"
+   gobs-learn save --note <start打印的卡片路径> --body-file CARD.md --chat-file LECTURE.md --title "领域名"
    ```
 
    - `--chat-file` 里放讲解正文。过程课要把 ASCII 原样写进去，例如：
@@ -104,8 +104,8 @@ argument-hint: "[领域名，如 Transformer 或 英语]"
 | --- | --- |
 | **普通 `gobs`** | 每天进库聊天（主入口） |
 | **`/learn`** | 已在会话里，想立刻上课 |
-| `gobs learn save` | 学习模式下「保存」：原文 + 领域卡 |
-| `gobs learn start NAME --no-launch` | 只建卡（本 skill 内部会调） |
+| `gobs-learn save` | 学习模式下「保存」：原文 + 领域卡 |
+| `gobs-learn start NAME --no-launch` | 只建卡（本 skill 内部会调） |
 
 ## 禁止
 

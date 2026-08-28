@@ -1,148 +1,34 @@
-# gobs
+# gobs-learn
 
-**gobs** launches an AI CLI against **your own [Obsidian](https://obsidian.md) vault**.
+L0→L1 coaching on top of **[gobs](https://github.com/wisdom-km/gobs)**.
 
-You read. The model writes and files — **only when you ask**, and only through
-`gobs save`. The chat itself is never dumped into a current note.
+gobs opens Obsidian and Grok, and saves ordinary notes (explainers, translations).
+**gobs-learn** is the separate app for lessons: `/learn` in a session, domain cards,
+`gobs-learn start` / `save` / `status`.
 
-Default CLI: [Grok](https://x.ai). gobs is a launcher, not a new chat UI.
-
-**How to use (full walkthrough):** [docs/usage.md](docs/usage.md) ·
-[中文](docs/usage.zh.md) ·
-[学习模式](docs/learn.zh.md)
-
----
-
-## Install
-
-Python 3.10+. Obsidian desktop, [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api)
-(MCP `http://127.0.0.1:27123/mcp/`), and `grok` on `PATH`.
+Install gobs first (or let pip pull it):
 
 ```bash
-pip install git+https://github.com/wisdom-km/gobs.git
-# uv tool install git+https://github.com/wisdom-km/gobs.git
-```
-
-```powershell
-irm https://raw.githubusercontent.com/wisdom-km/gobs/main/install.ps1 | iex
+pip install git+https://github.com/wisdom-km/gobs.git@core
+pip install git+https://github.com/wisdom-km/gobs-learn.git
 ```
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wisdom-km/gobs/main/install.sh | bash
+gobs init "/path/to/your/vault"
+gobs-learn init "/path/to/your/vault"
+gobs-learn start Transformer --no-launch   # create the card only
+gobs                                # daily: Obsidian + Grok
+# in the session: /learn Transformer
 ```
-
-Open a **new** terminal after install.
-
-```bash
-gobs init "/path/to/your/vault"    # keeps your folders; does not replace AGENTS.md
-gobs doctor
-gobs                               # open vault, start Grok
-```
-
-Empty vault, optional Johnny Decimal skeleton: `gobs init ~/Notes/Vault --skeleton`.
-
-`gobs init` upserts save + learn protocol blocks in `AGENTS.md`, installs
-`/save-to-vault`, `/learn`, and `/learn-domain`, and creates `22_study/00_learn/` plus
-`90_archive/transcripts/` if needed.
-`--force-agents` is the only way to overwrite `AGENTS.md`.
-
-Private rules (calendar, language, “don’t touch this folder”) stay in **your**
-`AGENTS.md`. gobs does not copy API keys; `gobs doctor` checks MCP without
-printing tokens.
-
----
-
-## Daily use
 
 ```text
-gobs                 # first time: straight into Grok. later: pick n / a number / q
-gobs --new           # always new
-gobs --resume ID
-gobs sessions
+gobs-learn init [vault]
+gobs-learn start NAME [--no-launch] [--new] [--resume ID]
+gobs-learn save --note CARD.md --body-file CARD.md --chat-file LECTURE.md
+gobs-learn status
 ```
 
-Talk in Grok with the vault open. Reading and drafting an explainer page is
-normal conversation. **Saving** is a separate sentence.
-
-### Learn mode (L0 → L1)
-
-Learning is optional. The main entry is still plain `gobs`. In that session type
-`/learn` or `/learn Transformer`.
-
-L0 teaching is for a complete beginner: a story and one visible example, like a
-normal gobs 讲解, not a quiz. Terms come after the “remember these sentences”
-landing. Saying **保存** archives a readable lecture (not a chat log) and
-writes the current block onto the topic’s domain card (`gobs learn save`).
-Promotion to L1 happens only when you say **确认升到 L1**.
-Details: [docs/learn.zh.md](docs/learn.zh.md).
-
-### Save (current note)
-
-In the Grok session say **写进库**, **记下来**, **save to vault**, or
-**`/save-to-vault`**.
-
-You get a short current page (conclusions, decisions, follow-ups). The model
-searches first, prefers editing an existing note, and files using your
-taxonomy (or the optional skeleton). It must call `gobs save`, not paste the
-chat.
-
-### Archive (optional original wording)
-
-Say **写进库，连同原文** or **`/save-to-vault including transcript`**.
-
-| File | Where | For |
-| --- | --- | --- |
-| Distilled note | A current page | You read this |
-| Transcript | `90_archive/transcripts/YYYY-MM-DD-title.md` | Lookup; not “read this today” |
-
-Sentences marked `[pN]` in the distilled note become wikilinks to **that
-paragraph** in the transcript. Click in Obsidian to jump back to the original
-wording.
-
-Archive is not a calendar event. Home-page “read this today” stays your vault’s
-rule.
-
-Power-user CLI and paragraph-id details: [docs/saving.md](docs/saving.md).
-
----
-
-## Commands
-
-```text
-gobs
-gobs --new
-gobs --resume ID
-gobs --no-open
-gobs init [vault] [--skeleton] [--force-agents]
-gobs learn start NAME [--no-launch]
-gobs learn save --note 22_study/00_learn/NAME.md --body-file CARD.md --chat-file CHAT.md
-gobs learn status
-gobs save --note REL.md --body-file FILE [--chat-file FILE] [--title NAME]
-gobs sessions
-gobs doctor
-gobs config vault PATH
-```
-
-```bash
-gobs save --note 30_lessons/idea.md --body-file distilled.md
-gobs save --note 30_lessons/idea.md --body-file distilled.md --chat-file chat.md --title idea
-```
-
-`--note` is vault-relative and cannot contain `..`.
-
----
-
-## More
-
-- [docs/usage.md](docs/usage.md) — full how-to (setup, talk, save, archive, troubleshooting)
-- [docs/usage.zh.md](docs/usage.zh.md) — 中文用法
-- [docs/learn.zh.md](docs/learn.zh.md) — L0→L1 学习模式
-- [docs/saving.md](docs/saving.md) — save/archive protocol
-- [docs/other-clis.md](docs/other-clis.md) — Claude Code, Codex, …
-
-Config: `~/.gobs/config.toml` and `<vault>/.gobs/config.toml`.
-Child env: `GOBS=1`, `GOBS_VAULT`, `GOBS_CLI` (learn mode also sets
-`GOBS_LEARN=1`, `GOBS_LEARN_NOTE`).
+Domain cards (`gobs_type: domain`) belong to this app, not to gobs.
 
 ## License
 
